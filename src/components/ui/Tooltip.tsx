@@ -7,7 +7,7 @@ interface TooltipProps {
 
 export function Tooltip({ content, children }: TooltipProps) {
   const [isVisible, setIsVisible] = useState(false);
-  const timeoutRef = useRef<number>();
+  const timeoutRef = useRef<number | undefined>(undefined);
   const tooltipId = useId();
 
   const show = () => {
