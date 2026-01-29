@@ -1,7 +1,7 @@
 import type { Pizzeria, PizzaStyle } from '../../types';
 import { formatHoursCompact, getTodayHours } from '../../utils/hoursFormatter';
 import { getGoogleMapsUrl } from '../../utils/maps';
-import { Z_INDEX } from '../../constants';
+import { Z_INDEX, STYLE_COLORS, DEFAULT_STYLE_COLORS } from '../../constants';
 import { LocationIcon, PhoneIcon, ClockIcon, GlobeIcon, CloseIcon } from '../ui/Icons';
 
 interface PizzeriaCardProps {
@@ -14,129 +14,145 @@ export function PizzeriaCard({ pizzeria, style, onClose }: PizzeriaCardProps) {
   const todayHours = getTodayHours(pizzeria.hours);
   const allHours = formatHoursCompact(pizzeria.hours);
   const mapsUrl = getGoogleMapsUrl(pizzeria.address, pizzeria.google_maps_url);
+  
+  const styleColors = style?.slug ? STYLE_COLORS[style.slug] : null;
+  const accentColor = styleColors?.markerColor || DEFAULT_STYLE_COLORS.markerColor;
 
   return (
-    <div 
-      className="absolute bottom-0 left-0 right-0 animate-slide-up"
-      style={{ zIndex: Z_INDEX.overlay }}
-    >
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/20" onClick={onClose} />
+    <>
+      {/* Backdrop - click to close */}
+      <div 
+        className="fixed inset-0 bg-black/30 backdrop-blur-[2px]"
+        style={{ zIndex: Z_INDEX.overlay }}
+        onClick={onClose}
+      />
       
-      {/* Card */}
-      <div className="relative bg-gray-900 rounded-t-2xl shadow-2xl border-t border-gray-700 max-h-[85vh] overflow-y-auto">
-        {/* Handle bar */}
-        <div className="sticky top-0 bg-gray-900 flex justify-center pt-3 pb-2 cursor-grab">
-          <div className="w-12 h-1.5 bg-gray-600 rounded-full" />
-        </div>
+      {/* Floating Card - left side panel */}
+      <div 
+        className="fixed left-4 bottom-4 top-4 w-80 max-w-[calc(100vw-2rem)] animate-slide-in-left"
+        style={{ zIndex: Z_INDEX.modal }}
+      >
+        <div className="h-full bg-gray-900/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-700/50 flex flex-col overflow-hidden">
+          {/* Color accent bar */}
+          <div 
+            className="h-1.5 w-full shrink-0"
+            style={{ backgroundColor: accentColor }}
+          />
+          
+          {/* Close button */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-3 p-1.5 text-gray-400 hover:text-white active:text-white transition-colors rounded-lg hover:bg-gray-800/50 touch-manipulation"
+            aria-label="Close"
+          >
+            <CloseIcon />
+          </button>
 
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-2 right-2 p-2 text-gray-400 hover:text-white active:text-white transition-colors touch-manipulation"
-          aria-label="Close"
-        >
-          <CloseIcon />
-        </button>
-
-        {/* Content */}
-        <div 
-          className="px-4 sm:px-6 pb-6 pt-1" 
-          style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
-        >
-          {/* Header */}
-          <div className="pr-8">
-            <h2 className="text-xl sm:text-2xl font-bold text-white">{pizzeria.name}</h2>
-            {style && (
-              <span className="inline-block mt-2 px-3 py-1 bg-orange-500/20 text-orange-400 rounded-full text-sm font-medium">
-                {style.name}
-              </span>
-            )}
-          </div>
-
-          {/* Description */}
-          {pizzeria.description && (
-            <p className="mt-4 text-gray-300 text-sm sm:text-base">{pizzeria.description}</p>
-          )}
-
-          {/* Details */}
-          <div className="mt-5 space-y-4">
-            <DetailRow icon={<LocationIcon className="w-5 h-5 text-gray-500" />}>
-              <p className="text-gray-300 text-sm sm:text-base break-words">{pizzeria.address}</p>
-              <a 
-                href={mapsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-orange-400 text-sm hover:underline active:underline inline-block mt-1"
-              >
-                Open in Google Maps →
-              </a>
-            </DetailRow>
-
-            {pizzeria.phone && (
-              <DetailRow icon={<PhoneIcon className="w-5 h-5 text-gray-500" />}>
-                <a 
-                  href={`tel:${pizzeria.phone}`}
-                  className="text-gray-300 hover:text-orange-400 active:text-orange-400 transition-colors text-sm sm:text-base"
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto px-4 py-4">
+            {/* Header */}
+            <div className="pr-8">
+              <h2 className="text-lg font-bold text-white leading-snug">{pizzeria.name}</h2>
+              {style && (
+                <span 
+                  className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-full text-xs font-medium text-white"
+                  style={{ backgroundColor: accentColor }}
                 >
-                  {pizzeria.phone}
-                </a>
-              </DetailRow>
+                  {styleColors?.icon || DEFAULT_STYLE_COLORS.icon}
+                  {style.name}
+                </span>
+              )}
+            </div>
+
+            {/* Description */}
+            {pizzeria.description && (
+              <p className="mt-3 text-gray-400 text-sm leading-relaxed">{pizzeria.description}</p>
             )}
 
-            <DetailRow icon={<ClockIcon className="w-5 h-5 text-gray-500 mt-0.5" />}>
-              <p className="text-gray-300 text-sm sm:text-base">
-                <span className="text-gray-500">Today:</span> {todayHours}
-              </p>
-              <details className="mt-1">
-                <summary className="text-orange-400 text-sm cursor-pointer hover:underline active:underline touch-manipulation">
-                  See all hours
-                </summary>
-                <div className="mt-2 text-sm text-gray-400 space-y-1">
-                  {allHours.map((line, i) => (
-                    <p key={i}>{line}</p>
-                  ))}
-                </div>
-              </details>
-            </DetailRow>
-
-            {pizzeria.website && (
-              <DetailRow icon={<GlobeIcon className="w-5 h-5 text-gray-500" />}>
+            {/* Details */}
+            <div className="mt-4 space-y-3">
+              <DetailRow icon={<LocationIcon className="w-4 h-4 text-gray-500" />}>
+                <p className="text-gray-300 text-sm break-words leading-snug">{pizzeria.address}</p>
                 <a 
-                  href={pizzeria.website}
+                  href={mapsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-orange-400 hover:underline active:underline text-sm sm:text-base"
+                  className="text-xs hover:underline active:underline inline-block mt-0.5"
+                  style={{ color: accentColor }}
                 >
-                  Visit Website
+                  Open in Maps →
                 </a>
               </DetailRow>
-            )}
+
+              {pizzeria.phone && (
+                <DetailRow icon={<PhoneIcon className="w-4 h-4 text-gray-500" />}>
+                  <a 
+                    href={`tel:${pizzeria.phone}`}
+                    className="text-gray-300 hover:text-white transition-colors text-sm"
+                  >
+                    {pizzeria.phone}
+                  </a>
+                </DetailRow>
+              )}
+
+              <DetailRow icon={<ClockIcon className="w-4 h-4 text-gray-500 mt-0.5" />}>
+                <p className="text-gray-300 text-sm">
+                  <span className="text-gray-500">Today:</span> {todayHours}
+                </p>
+                <details className="mt-1">
+                  <summary 
+                    className="text-xs cursor-pointer hover:underline active:underline touch-manipulation"
+                    style={{ color: accentColor }}
+                  >
+                    See all hours
+                  </summary>
+                  <div className="mt-2 text-xs text-gray-500 space-y-0.5">
+                    {allHours.map((line, i) => (
+                      <p key={i}>{line}</p>
+                    ))}
+                  </div>
+                </details>
+              </DetailRow>
+
+              {pizzeria.website && (
+                <DetailRow icon={<GlobeIcon className="w-4 h-4 text-gray-500" />}>
+                  <a 
+                    href={pizzeria.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline active:underline text-sm"
+                    style={{ color: accentColor }}
+                  >
+                    Visit Website
+                  </a>
+                </DetailRow>
+              )}
+            </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="mt-6 flex flex-col sm:flex-row gap-3">
+          {/* Action Buttons - sticky bottom */}
+          <div className="shrink-0 px-4 py-3 border-t border-gray-800/50 bg-gray-900/80 space-y-2">
             {pizzeria.phone && (
-              <ActionButton href={`tel:${pizzeria.phone}`} variant="primary">
-                Call Now
+              <ActionButton href={`tel:${pizzeria.phone}`} accentColor={accentColor} variant="primary">
+                📞 Call Now
               </ActionButton>
             )}
             {pizzeria.website && (
-              <ActionButton href={pizzeria.website} variant="secondary" external>
-                View Menu
+              <ActionButton href={pizzeria.website} accentColor={accentColor} variant="secondary" external>
+                🍕 View Menu
               </ActionButton>
             )}
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
 /** Detail row with icon and content */
 function DetailRow({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-3">
+    <div className="flex items-start gap-2.5">
       <div className="shrink-0 mt-0.5">{icon}</div>
       <div className="min-w-0 flex-1">{children}</div>
     </div>
@@ -146,26 +162,30 @@ function DetailRow({ icon, children }: { icon: React.ReactNode; children: React.
 /** Action button with consistent styling */
 function ActionButton({ 
   href, 
+  accentColor,
   variant, 
   external, 
   children 
 }: { 
-  href: string; 
+  href: string;
+  accentColor: string;
   variant: 'primary' | 'secondary'; 
   external?: boolean;
   children: React.ReactNode;
 }) {
-  const baseClasses = "flex-1 py-3.5 px-4 font-semibold rounded-xl text-center transition-colors touch-manipulation";
-  const variantClasses = variant === 'primary' 
-    ? "bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white"
-    : "bg-gray-700 hover:bg-gray-600 active:bg-gray-500 text-white";
+  const baseClasses = "w-full py-2.5 px-4 font-semibold rounded-xl text-center text-sm transition-all touch-manipulation block";
+  
+  const style = variant === 'primary' 
+    ? { backgroundColor: accentColor, color: 'white' }
+    : { backgroundColor: 'transparent', color: accentColor, border: `1px solid ${accentColor}` };
 
   return (
     <a
       href={href}
       target={external ? "_blank" : undefined}
       rel={external ? "noopener noreferrer" : undefined}
-      className={`${baseClasses} ${variantClasses}`}
+      className={`${baseClasses} ${variant === 'primary' ? 'hover:opacity-90' : 'hover:bg-gray-800/30'}`}
+      style={style}
     >
       {children}
     </a>

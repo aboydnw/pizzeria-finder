@@ -16,62 +16,83 @@ export function StyleFilter() {
 
   const getColors = (slug: string) => STYLE_COLORS[slug] || DEFAULT_STYLE_COLORS;
 
+  // Count pizzerias per style and filter out styles with no pizzerias
+  const stylesWithCount = pizzaStyles
+    .map(style => {
+      const count = pizzerias.filter(p => {
+        const pizzeriaStyle = p.pizzeria_styles?.[0];
+        return pizzeriaStyle?.style_id === style.id;
+      }).length;
+      return { ...style, count };
+    })
+    .filter(style => style.count > 0);
+
   return (
     <div 
-      className="absolute top-0 left-0 right-0 pt-[env(safe-area-inset-top)]"
+      className="absolute top-4 right-4 sm:top-6 sm:right-6"
       style={{ zIndex: Z_INDEX.overlay }}
     >
-      {/* Filter container with glassmorphism */}
-      <div className="mx-2 mt-2 sm:mx-4 sm:mt-4 bg-gray-900/80 backdrop-blur-md rounded-2xl shadow-xl border border-gray-700/50">
+      {/* Compact legend container */}
+      <div className="bg-gray-900/85 backdrop-blur-md rounded-xl shadow-xl border border-gray-700/50 w-44">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 pt-3 pb-2">
-          <h2 className="text-white font-semibold text-sm">Filter by Style</h2>
-          <span className="text-gray-400 text-xs">
-            {activeStyleFilter ? `${filteredCount} of ${totalCount}` : `${totalCount} pizzerias`}
+        <div className="flex items-center justify-between px-3 py-2 border-b border-gray-700/50">
+          <span className="text-gray-400 text-xs font-medium uppercase tracking-wide">Legend</span>
+          <span className="text-gray-500 text-xs">
+            {activeStyleFilter ? filteredCount : totalCount}
           </span>
         </div>
 
-        {/* Horizontally scrollable filter buttons */}
-        <div className="overflow-x-auto scrollbar-hide pb-3 px-3">
-          <div className="flex gap-2 min-w-max">
-            {/* All button */}
-            <button
-              onClick={() => setStyleFilter(null)}
-              className={`px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap touch-manipulation ${
-                activeStyleFilter === null
-                  ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30'
-                  : 'bg-gray-700/60 text-gray-300 active:bg-gray-600/60'
-              }`}
-            >
-              All
-            </button>
+        {/* Style list */}
+        <div className="py-1.5">
+          {/* All option */}
+          <button
+            onClick={() => setStyleFilter(null)}
+            className={`w-full px-3 py-1.5 flex items-center gap-2 text-left transition-colors ${
+              activeStyleFilter === null
+                ? 'bg-orange-500/20 text-orange-300'
+                : 'text-gray-300 hover:bg-gray-800/50'
+            }`}
+          >
+            <span className="text-sm">🍕</span>
+            <span className="text-xs font-medium flex-1">All Styles</span>
+            <span className="text-xs text-gray-500">{totalCount}</span>
+          </button>
 
-            {/* Style buttons */}
-            {pizzaStyles.map((style) => {
-              const colors = getColors(style.slug);
-              const isActive = activeStyleFilter === style.slug;
+          {/* Style buttons */}
+          {stylesWithCount.map((style) => {
+            const colors = getColors(style.slug);
+            const isActive = activeStyleFilter === style.slug;
 
-              return (
-                <div key={style.id} className="flex items-center gap-1">
-                  <button
-                    onClick={() => setStyleFilter(isActive ? null : style.slug)}
-                    className={`px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap touch-manipulation ${
-                      isActive
-                        ? `${colors.active} text-white shadow-lg`
-                        : `${colors.bg} ${colors.text} active:opacity-70`
-                    }`}
+            return (
+              <div key={style.id} className="relative group">
+                <button
+                  onClick={() => setStyleFilter(isActive ? null : style.slug)}
+                  className={`w-full px-3 py-1.5 flex items-center gap-2 text-left transition-colors ${
+                    isActive
+                      ? `bg-gray-700/60 text-white`
+                      : 'text-gray-300 hover:bg-gray-800/50'
+                  }`}
+                >
+                  <span 
+                    className="w-4 h-4 rounded-full flex items-center justify-center text-xs"
+                    style={{ backgroundColor: colors.markerColor }}
                   >
-                    {style.name}
-                  </button>
-                  {style.description && (
-                    <Tooltip content={style.description}>
-                      <span className="text-gray-400 hover:text-white text-sm">ℹ️</span>
-                    </Tooltip>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                    {colors.icon}
+                  </span>
+                  <span className="text-xs font-medium flex-1 truncate">{style.name}</span>
+                  <span className="text-xs text-gray-500">{style.count}</span>
+                </button>
+                
+                {style.description && (
+                  <Tooltip content={style.description}>
+                    <span className="absolute right-8 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 text-xs opacity-0 group-hover:opacity-100 transition-opacity cursor-help">
+                      ⓘ
+                    </span>
+                  </Tooltip>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

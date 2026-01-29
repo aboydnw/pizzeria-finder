@@ -1,12 +1,15 @@
+import { useState } from 'react';
 import { usePizzeriaStore } from './stores/pizzeriaStore';
 import { useLoadPizzerias } from './hooks/useLoadPizzerias';
 import { PizzeriaMap } from './components/Map';
 import { PizzeriaCard } from './components/Pizzeria';
 import { StyleFilter } from './components/Filter';
+import { SubmitButton, SubmitForm } from './components/Submit';
 
 function App() {
   const { isLoading, error } = useLoadPizzerias();
   const { selectedPizzeria, setSelectedPizzeria, getStyleForPizzeria } = usePizzeriaStore();
+  const [isSubmitFormOpen, setIsSubmitFormOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -34,6 +37,15 @@ function App() {
     <div className="h-screen w-screen overflow-hidden relative">
       <PizzeriaMap />
       <StyleFilter />
+      
+      {/* Add Pizzeria Button */}
+      <SubmitButton onClick={() => setIsSubmitFormOpen(true)} />
+      
+      {/* Submit Form Modal */}
+      <SubmitForm 
+        isOpen={isSubmitFormOpen} 
+        onClose={() => setIsSubmitFormOpen(false)} 
+      />
       
       {selectedPizzeria && (
         <PizzeriaCard

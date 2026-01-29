@@ -60,14 +60,73 @@ body {
   animation: slide-up 0.3s ease-out forwards;
 }
 
+/* Slide-in from left for floating panel */
+@keyframes slide-in-left {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Custom marker styling */
+.custom-pizza-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Fade in animation */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out forwards;
+}
+
+/* Scale in animation for modals */
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Mobile scale-in without translate */
+@media (max-width: 640px) {
+  .animate-scale-in {
+    animation: none;
+    animation: fade-in 0.2s ease-out forwards;
+  }
+}
+
 /* Touch manipulation for better mobile interaction */
 .touch-manipulation {
   touch-action: manipulation;
 }
 
-/* Responsive map controls - move zoom buttons down on mobile */
-@media (max-width: 640px) {
-  .leaflet-top.leaflet-left {
-    top: 120px !important;
-  }
+/* Leaflet map controls positioning */
+.leaflet-top.leaflet-left {
+  top: 10px !important;
+  left: 10px !important;
 }
