@@ -13,6 +13,10 @@ export function PizzeriaMap() {
 
   const pizzerias = getFilteredPizzerias();
 
+  const handleViewDetails = (pizzeria: typeof pizzerias[0]) => {
+    setSelectedPizzeria(pizzeria);
+  };
+
   return (
     <MapContainer
       center={PORTLAND_CENTER}
@@ -29,7 +33,7 @@ export function PizzeriaMap() {
           key={pizzeria.id}
           pizzeria={pizzeria}
           style={getStyleForPizzeria(pizzeria)}
-          onClick={setSelectedPizzeria}
+          onClick={handleViewDetails}
         />
       ))}
     </MapContainer>

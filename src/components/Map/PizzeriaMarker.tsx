@@ -1,5 +1,6 @@
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
+import { useRef } from 'react';
 import type { Pizzeria, PizzaStyle } from '../../types';
 import { STYLE_COLORS, DEFAULT_STYLE_COLORS } from '../../constants';
 
@@ -60,27 +61,63 @@ interface PizzeriaMarkerProps {
 export function PizzeriaMarker({ pizzeria, style, onClick }: PizzeriaMarkerProps) {
   const icon = getIconForStyle(style?.slug);
   const colors = style?.slug ? STYLE_COLORS[style.slug] : null;
-  
+  const markerRef = useRef<L.Marker>(null);
+
+  const handleMoreDetails = () => {
+    // Close the popup first
+    if (markerRef.current) {
+      markerRef.current.closePopup();
+    }
+    // Then trigger the details panel
+    onClick?.(pizzeria);
+  };
+
+  // Truncate description for tooltip
+  const shortDescription = pizzeria.description 
+    ? pizzeria.description.length > 120 
+      ? pizzeria.description.slice(0, 120) + '...'
+      : pizzeria.description
+    : null;
+
   return (
     <Marker
+      ref={markerRef}
       position={[pizzeria.lat, pizzeria.lng]}
       icon={icon}
-      eventHandlers={{
-        click: () => onClick?.(pizzeria),
-      }}
     >
-      <Popup>
-        <div className="min-w-48">
-          <h3 className="font-bold text-base text-gray-900">{pizzeria.name}</h3>
-          <p className="text-sm text-gray-600 mt-1">{pizzeria.address}</p>
+      <Popup className="pizzeria-popup" closeButton={false}>
+        <div className="w-64">
+          {/* Header */}
+          <h3 className="font-bold text-base text-gray-900 leading-tight pr-4">
+            {pizzeria.name}
+          </h3>
+          
+          {/* Style badge */}
           {style && (
             <span 
-              className="inline-flex items-center gap-1 mt-2 px-2 py-0.5 rounded text-xs font-medium text-white"
+              className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded text-xs font-medium text-white"
               style={{ backgroundColor: colors?.markerColor || DEFAULT_STYLE_COLORS.markerColor }}
             >
               {colors?.icon || DEFAULT_STYLE_COLORS.icon} {style.name}
             </span>
           )}
+          
+          {/* Description */}
+          {shortDescription && (
+            <p className="mt-2 text-sm text-gray-600 leading-snug">
+              {shortDescription}
+            </p>
+          )}
+          
+          {/* More Details button */}
+          <button
+            onClick={handleMoreDetails}
+            className="mt-3 w-full py-2 px-3 text-white text-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-1.5"
+            style={{ backgroundColor: colors?.markerColor || DEFAULT_STYLE_COLORS.markerColor }}
+          >
+            <span>View Details</span>
+            <span>→</span>
+          </button>
         </div>
       </Popup>
     </Marker>

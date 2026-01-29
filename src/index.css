@@ -28,11 +28,42 @@ body {
 
 /* Fix popup styling with Tailwind reset */
 .leaflet-popup-content-wrapper {
-  border-radius: 8px;
+  border-radius: 12px;
+  padding: 0;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
 }
 
 .leaflet-popup-content {
-  margin: 12px;
+  margin: 14px;
+  font-family: inherit;
+}
+
+/* Custom close button for popup */
+.leaflet-popup-close-button {
+  color: #9ca3af !important;
+  font-size: 20px !important;
+  padding: 6px 8px !important;
+  top: 4px !important;
+  right: 4px !important;
+}
+
+.leaflet-popup-close-button:hover {
+  color: #374151 !important;
+}
+
+/* Hide the popup tip shadow */
+.leaflet-popup-tip-container {
+  margin-top: -1px;
+}
+
+/* Pizzeria popup specific styling */
+.pizzeria-popup .leaflet-popup-content-wrapper {
+  background: white;
+  border: 1px solid #e5e7eb;
+}
+
+.pizzeria-popup .leaflet-popup-content {
+  margin: 16px;
 }
 
 /* Hide horizontal scrollbar but allow scrolling */
