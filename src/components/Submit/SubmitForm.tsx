@@ -31,7 +31,7 @@ const initialFormData: FormData = {
 };
 
 export function SubmitForm({ isOpen, onClose }: SubmitFormProps) {
-  const { pizzaStyles, setPizzerias, pizzerias } = usePizzeriaStore();
+  const { pizzaStyles } = usePizzeriaStore();
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
