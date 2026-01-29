@@ -10,46 +10,57 @@ export interface PizzeriaSubmission {
   google_maps_url?: string;
   style_id?: string;
   description?: string;
-  submitter_email?: string;
 }
 
-/**
- * Submit a new pizzeria for review
- */
-export async function submitPizzeria(submission: PizzeriaSubmission): Promise<{ success: boolean; error?: string }> {
-  try {
-    const { error } = await supabase
-      .from('pizzeria_submissions')
-      .insert({
-        ...submission,
-        status: 'pending'
-      });
+// Portland city ID (hardcoded for now since we only support Portland)
+const PORTLAND_CITY_ID = '5f835ff7-1600-4979-9688-1935bfb98c2c';
 
-    if (error) {
-      console.error('Submission error:', error);
-      return { success: false, error: error.message };
+/**
+ * Submit a new pizzeria - adds directly to the map
+ */
+export async function submitPizzeria(submission: PizzeriaSubmission): Promise<{ success: boolean; error?: string; pizzeriaId?: string }> {
+  try {
+    // First, insert the pizzeria
+    const { data: pizzeria, error: pizzeriaError } = await supabase
+      .from('pizzerias')
+      .insert({
+        city_id: PORTLAND_CITY_ID,
+        name: submission.name,
+        address: submission.address,
+        lat: submission.lat || 45.5152, // Default to Portland center if no coords
+        lng: submission.lng || -122.6784,
+        phone: submission.phone || null,
+        website: submission.website || null,
+        google_maps_url: submission.google_maps_url || null,
+        description: submission.description || null,
+      })
+      .select('id')
+      .single();
+
+    if (pizzeriaError) {
+      console.error('Pizzeria insert error:', pizzeriaError);
+      return { success: false, error: pizzeriaError.message };
     }
 
-    return { success: true };
+    // Then, if a style was selected, create the pizzeria_style relationship
+    if (submission.style_id && pizzeria?.id) {
+      const { error: styleError } = await supabase
+        .from('pizzeria_styles')
+        .insert({
+          pizzeria_id: pizzeria.id,
+          style_id: submission.style_id,
+          is_primary: true,
+        });
+
+      if (styleError) {
+        console.error('Style link error:', styleError);
+        // Don't fail the whole submission, just log it
+      }
+    }
+
+    return { success: true, pizzeriaId: pizzeria?.id };
   } catch (e) {
     console.error('Submission failed:', e);
     return { success: false, error: 'Failed to submit. Please try again.' };
   }
-}
-
-/**
- * Get count of pending submissions (for admin display)
- */
-export async function getPendingSubmissionsCount(): Promise<number> {
-  const { count, error } = await supabase
-    .from('pizzeria_submissions')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'pending');
-
-  if (error) {
-    console.error('Error fetching pending count:', error);
-    return 0;
-  }
-
-  return count || 0;
 }

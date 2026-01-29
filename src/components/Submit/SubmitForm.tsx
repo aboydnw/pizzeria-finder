@@ -18,7 +18,6 @@ interface FormData {
   website: string;
   styleId: string;
   description: string;
-  email: string;
 }
 
 const initialFormData: FormData = {
@@ -29,11 +28,10 @@ const initialFormData: FormData = {
   website: '',
   styleId: '',
   description: '',
-  email: '',
 };
 
 export function SubmitForm({ isOpen, onClose }: SubmitFormProps) {
-  const { pizzaStyles } = usePizzeriaStore();
+  const { pizzaStyles, setPizzerias, pizzerias } = usePizzeriaStore();
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -136,11 +134,15 @@ export function SubmitForm({ isOpen, onClose }: SubmitFormProps) {
         google_maps_url: formData.googleMapsUrl.trim() || undefined,
         style_id: formData.styleId || undefined,
         description: formData.description.trim() || undefined,
-        submitter_email: formData.email.trim() || undefined,
       });
 
       if (result.success) {
         setSubmitStatus('success');
+        
+        // Refresh the pizzerias list to show the new one
+        // This is a simple approach - in production you might want to 
+        // optimistically add it or refetch from the server
+        window.location.reload();
       } else {
         setErrorMessage(result.error || 'Failed to submit. Please try again.');
         setSubmitStatus('error');
@@ -169,14 +171,14 @@ export function SubmitForm({ isOpen, onClose }: SubmitFormProps) {
       
       {/* Modal */}
       <div 
-        className="fixed inset-4 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-lg sm:max-h-[90vh] bg-gray-900 rounded-2xl shadow-2xl border border-gray-700/50 flex flex-col overflow-hidden animate-scale-in"
+        className="fixed inset-4 sm:inset-auto sm:top-4 sm:bottom-4 sm:left-1/2 sm:-translate-x-1/2 sm:w-full sm:max-w-lg bg-gray-900 rounded-2xl shadow-2xl border border-gray-700/50 flex flex-col overflow-hidden animate-fade-in"
         style={{ zIndex: Z_INDEX.modal + 1 }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800 shrink-0">
           <div>
             <h2 className="text-lg font-bold text-white">Add a Pizzeria</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Know a great pizza spot? Let us know!</p>
+            <p className="text-xs text-gray-400 mt-0.5">Know a great pizza spot? Add it to the map!</p>
           </div>
           <button
             onClick={onClose}
@@ -192,16 +194,10 @@ export function SubmitForm({ isOpen, onClose }: SubmitFormProps) {
           {submitStatus === 'success' ? (
             <div className="text-center py-8">
               <div className="text-5xl mb-4">🍕</div>
-              <h3 className="text-xl font-bold text-white mb-2">Thanks for the tip!</h3>
+              <h3 className="text-xl font-bold text-white mb-2">Added to the map!</h3>
               <p className="text-gray-400 text-sm mb-6">
-                We'll review your submission and add it to the map if it checks out.
+                Thanks for sharing this spot. Refreshing to show it on the map...
               </p>
-              <button
-                onClick={onClose}
-                className="px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl transition-colors"
-              >
-                Done
-              </button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -209,7 +205,7 @@ export function SubmitForm({ isOpen, onClose }: SubmitFormProps) {
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1.5">
                   Google Maps Link
-                  <span className="text-gray-500 font-normal ml-1">(helps us verify)</span>
+                  <span className="text-gray-500 font-normal ml-1">(optional)</span>
                 </label>
                 <input
                   type="url"
@@ -326,24 +322,8 @@ export function SubmitForm({ isOpen, onClose }: SubmitFormProps) {
                   value={formData.description}
                   onChange={handleChange}
                   placeholder="Tell us what makes their pizza special..."
-                  rows={3}
+                  rows={2}
                   className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors resize-none"
-                />
-              </div>
-
-              {/* Email */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                  Your Email
-                  <span className="text-gray-500 font-normal ml-1">(optional, for updates)</span>
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="you@example.com"
-                  className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-colors"
                 />
               </div>
 
@@ -363,19 +343,15 @@ export function SubmitForm({ isOpen, onClose }: SubmitFormProps) {
                 {isSubmitting ? (
                   <>
                     <span className="animate-spin">⏳</span>
-                    Submitting...
+                    Adding to map...
                   </>
                 ) : (
                   <>
                     <span>🍕</span>
-                    Submit Pizzeria
+                    Add to Map
                   </>
                 )}
               </button>
-
-              <p className="text-xs text-gray-500 text-center">
-                Submissions are reviewed before being added to the map.
-              </p>
             </form>
           )}
         </div>
