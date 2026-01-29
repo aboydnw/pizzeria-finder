@@ -1,13 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usePizzeriaStore } from '../../stores/pizzeriaStore';
-import { submitPizzeria } from '../../services/submissions';
+import { submitPizzeria, updatePizzeria } from '../../services/submissions';
 import { parseGoogleMapsUrl, geocodeAddress, isInPortlandArea } from '../../utils/googleMaps';
 import { Z_INDEX, STYLE_COLORS, DEFAULT_STYLE_COLORS } from '../../constants';
 import { CloseIcon } from '../ui/Icons';
+import type { Pizzeria, PizzaStyle } from '../../types';
 
 interface SubmitFormProps {
   isOpen: boolean;
   onClose: () => void;
+  editPizzeria?: Pizzeria | null; // If provided, we're in edit mode
+  editStyle?: PizzaStyle | null;
 }
 
 interface FormData {
@@ -30,13 +33,30 @@ const initialFormData: FormData = {
   description: '',
 };
 
-export function SubmitForm({ isOpen, onClose }: SubmitFormProps) {
+export function SubmitForm({ isOpen, onClose, editPizzeria, editStyle }: SubmitFormProps) {
   const { pizzaStyles } = usePizzeriaStore();
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [isParsingUrl, setIsParsingUrl] = useState(false);
+
+  const isEditMode = !!editPizzeria;
+
+  // Pre-fill form when editing
+  useEffect(() => {
+    if (isOpen && editPizzeria) {
+      setFormData({
+        name: editPizzeria.name || '',
+        address: editPizzeria.address || '',
+        googleMapsUrl: editPizzeria.google_maps_url || '',
+        phone: editPizzeria.phone || '',
+        website: editPizzeria.website || '',
+        styleId: editStyle?.id || '',
+        description: editPizzeria.description || '',
+      });
+    }
+  }, [isOpen, editPizzeria, editStyle]);
 
   // Reset form when closed
   useEffect(() => {
@@ -111,20 +131,29 @@ export function SubmitForm({ isOpen, onClose }: SubmitFormProps) {
       let lat: number | undefined;
       let lng: number | undefined;
       
-      const coords = await geocodeAddress(formData.address);
-      if (coords) {
-        if (isInPortlandArea(coords.lat, coords.lng)) {
-          lat = coords.lat;
-          lng = coords.lng;
-        } else {
-          setErrorMessage('This address appears to be outside the Portland area. Please check the address.');
-          setIsSubmitting(false);
-          return;
+      // Only geocode if address changed or we don't have coords
+      const addressChanged = editPizzeria ? formData.address !== editPizzeria.address : true;
+      
+      if (addressChanged) {
+        const coords = await geocodeAddress(formData.address);
+        if (coords) {
+          if (isInPortlandArea(coords.lat, coords.lng)) {
+            lat = coords.lat;
+            lng = coords.lng;
+          } else {
+            setErrorMessage('This address appears to be outside the Portland area. Please check the address.');
+            setIsSubmitting(false);
+            return;
+          }
         }
+      } else {
+        // Keep existing coordinates
+        lat = editPizzeria?.lat;
+        lng = editPizzeria?.lng;
       }
 
-      // Submit to database
-      const result = await submitPizzeria({
+      const submissionData = {
+        id: editPizzeria?.id,
         name: formData.name.trim(),
         address: formData.address.trim(),
         lat,
@@ -134,17 +163,20 @@ export function SubmitForm({ isOpen, onClose }: SubmitFormProps) {
         google_maps_url: formData.googleMapsUrl.trim() || undefined,
         style_id: formData.styleId || undefined,
         description: formData.description.trim() || undefined,
-      });
+      };
+
+      // Submit or update
+      const result = isEditMode 
+        ? await updatePizzeria(submissionData)
+        : await submitPizzeria(submissionData);
 
       if (result.success) {
         setSubmitStatus('success');
         
-        // Refresh the pizzerias list to show the new one
-        // This is a simple approach - in production you might want to 
-        // optimistically add it or refetch from the server
+        // Refresh the page to show changes
         window.location.reload();
       } else {
-        setErrorMessage(result.error || 'Failed to submit. Please try again.');
+        setErrorMessage(result.error || 'Failed to save. Please try again.');
         setSubmitStatus('error');
       }
     } catch (e) {
@@ -177,8 +209,12 @@ export function SubmitForm({ isOpen, onClose }: SubmitFormProps) {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800 shrink-0">
           <div>
-            <h2 className="text-lg font-bold text-white">Add a Pizzeria</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Know a great pizza spot? Add it to the map!</p>
+            <h2 className="text-lg font-bold text-white">
+              {isEditMode ? 'Edit Pizzeria' : 'Add a Pizzeria'}
+            </h2>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {isEditMode ? 'Update the details for this pizzeria' : 'Know a great pizza spot? Add it to the map!'}
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -194,9 +230,11 @@ export function SubmitForm({ isOpen, onClose }: SubmitFormProps) {
           {submitStatus === 'success' ? (
             <div className="text-center py-8">
               <div className="text-5xl mb-4">🍕</div>
-              <h3 className="text-xl font-bold text-white mb-2">Added to the map!</h3>
+              <h3 className="text-xl font-bold text-white mb-2">
+                {isEditMode ? 'Changes saved!' : 'Added to the map!'}
+              </h3>
               <p className="text-gray-400 text-sm mb-6">
-                Thanks for sharing this spot. Refreshing to show it on the map...
+                Refreshing to show the updates...
               </p>
             </div>
           ) : (
@@ -315,7 +353,7 @@ export function SubmitForm({ isOpen, onClose }: SubmitFormProps) {
               {/* Description */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                  Why is this place great?
+                  {isEditMode ? 'Description' : 'Why is this place great?'}
                 </label>
                 <textarea
                   name="description"
@@ -343,12 +381,12 @@ export function SubmitForm({ isOpen, onClose }: SubmitFormProps) {
                 {isSubmitting ? (
                   <>
                     <span className="animate-spin">⏳</span>
-                    Adding to map...
+                    {isEditMode ? 'Saving...' : 'Adding to map...'}
                   </>
                 ) : (
                   <>
                     <span>🍕</span>
-                    Add to Map
+                    {isEditMode ? 'Save Changes' : 'Add to Map'}
                   </>
                 )}
               </button>

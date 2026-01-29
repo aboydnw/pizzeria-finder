@@ -2,15 +2,16 @@ import type { Pizzeria, PizzaStyle } from '../../types';
 import { formatHoursCompact, getTodayHours } from '../../utils/hoursFormatter';
 import { getGoogleMapsUrl } from '../../utils/maps';
 import { Z_INDEX, STYLE_COLORS, DEFAULT_STYLE_COLORS } from '../../constants';
-import { LocationIcon, PhoneIcon, ClockIcon, GlobeIcon, CloseIcon } from '../ui/Icons';
+import { LocationIcon, PhoneIcon, ClockIcon, GlobeIcon, CloseIcon, EditIcon } from '../ui/Icons';
 
 interface PizzeriaCardProps {
   pizzeria: Pizzeria;
   style?: PizzaStyle;
   onClose: () => void;
+  onEdit?: () => void;
 }
 
-export function PizzeriaCard({ pizzeria, style, onClose }: PizzeriaCardProps) {
+export function PizzeriaCard({ pizzeria, style, onClose, onEdit }: PizzeriaCardProps) {
   const todayHours = getTodayHours(pizzeria.hours);
   const allHours = formatHoursCompact(pizzeria.hours);
   const mapsUrl = getGoogleMapsUrl(pizzeria.address, pizzeria.google_maps_url);
@@ -39,14 +40,26 @@ export function PizzeriaCard({ pizzeria, style, onClose }: PizzeriaCardProps) {
             style={{ backgroundColor: accentColor }}
           />
           
-          {/* Close button */}
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-3 p-1.5 text-gray-400 hover:text-white active:text-white transition-colors rounded-lg hover:bg-gray-800/50 touch-manipulation"
-            aria-label="Close"
-          >
-            <CloseIcon />
-          </button>
+          {/* Header buttons */}
+          <div className="absolute top-4 right-3 flex items-center gap-1">
+            {onEdit && (
+              <button
+                onClick={onEdit}
+                className="p-1.5 text-gray-400 hover:text-white active:text-white transition-colors rounded-lg hover:bg-gray-800/50 touch-manipulation"
+                aria-label="Edit pizzeria"
+                title="Edit"
+              >
+                <EditIcon className="w-5 h-5" />
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-1.5 text-gray-400 hover:text-white active:text-white transition-colors rounded-lg hover:bg-gray-800/50 touch-manipulation"
+              aria-label="Close"
+            >
+              <CloseIcon />
+            </button>
+          </div>
 
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto px-4 py-4">

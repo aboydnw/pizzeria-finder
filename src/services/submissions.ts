@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 
 export interface PizzeriaSubmission {
+  id?: string; // For updates
   name: string;
   address: string;
   lat?: number;
@@ -62,5 +63,65 @@ export async function submitPizzeria(submission: PizzeriaSubmission): Promise<{ 
   } catch (e) {
     console.error('Submission failed:', e);
     return { success: false, error: 'Failed to submit. Please try again.' };
+  }
+}
+
+/**
+ * Update an existing pizzeria
+ */
+export async function updatePizzeria(submission: PizzeriaSubmission): Promise<{ success: boolean; error?: string }> {
+  if (!submission.id) {
+    return { success: false, error: 'No pizzeria ID provided' };
+  }
+
+  try {
+    // Update the pizzeria
+    const { error: pizzeriaError } = await supabase
+      .from('pizzerias')
+      .update({
+        name: submission.name,
+        address: submission.address,
+        lat: submission.lat,
+        lng: submission.lng,
+        phone: submission.phone || null,
+        website: submission.website || null,
+        google_maps_url: submission.google_maps_url || null,
+        description: submission.description || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', submission.id);
+
+    if (pizzeriaError) {
+      console.error('Pizzeria update error:', pizzeriaError);
+      return { success: false, error: pizzeriaError.message };
+    }
+
+    // Update the style if provided
+    if (submission.style_id) {
+      // First, delete existing style associations
+      await supabase
+        .from('pizzeria_styles')
+        .delete()
+        .eq('pizzeria_id', submission.id);
+
+      // Then create the new one
+      const { error: styleError } = await supabase
+        .from('pizzeria_styles')
+        .insert({
+          pizzeria_id: submission.id,
+          style_id: submission.style_id,
+          is_primary: true,
+        });
+
+      if (styleError) {
+        console.error('Style update error:', styleError);
+        // Don't fail the whole update, just log it
+      }
+    }
+
+    return { success: true };
+  } catch (e) {
+    console.error('Update failed:', e);
+    return { success: false, error: 'Failed to update. Please try again.' };
   }
 }
